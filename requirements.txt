@@ -1,0 +1,11 @@
+beautifulsoup4
+requests
+sentence-transformers
+scikit-learn
+fastapi
+uvicorn
+aiosmtplib
+APScheduler
+python-dotenv
+openai
+pytest
