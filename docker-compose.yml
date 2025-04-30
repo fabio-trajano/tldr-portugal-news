@@ -1,0 +1,17 @@
+# docker-compose.yml
+version: '3.8'
+services:
+  api:
+    build: .
+    command: uvicorn src.api.main:app --host 0.0.0.0 --port 8000
+    env_file: .env.example
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+  scheduler:
+    build: .
+    command: python src/scheduler.py
+    env_file: .env.example
+    volumes:
+      - .:/app
