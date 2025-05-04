@@ -1,4 +1,6 @@
 beautifulsoup4
+lxml
+html5lib
 requests
 sentence-transformers
 scikit-learn
@@ -8,4 +10,5 @@ aiosmtplib
 APScheduler
 python-dotenv
 openai
+certifi
 pytest
