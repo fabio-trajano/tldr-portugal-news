@@ -1,4 +1,3 @@
-# scripts/seed_db.py
 from dotenv import load_dotenv
 import database
 
