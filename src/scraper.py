@@ -1,38 +1,60 @@
+#!/usr/bin/env python3
 import requests
-from bs4 import BeautifulSoup
+import xml.etree.ElementTree as ET
+from dateutil import parser
 from datetime import datetime
-import database
+from zoneinfo import ZoneInfo
 
-RSS_FEEDS = [
-    'https://feeds.publico.pt/rss',
-    'https://expresso.pt/rss',
-    'https://observador.pt/feed/',
-    'https://www.dn.pt/rss',
-    'https://www.jn.pt/rss',
-    'https://www.rtp.pt/noticias/index/rss.xml'
-]
+from database import init_db, get_connection
 
-def fetch_article_content(url):
-    try:
-        r = requests.get(url, timeout=10)
-        soup = BeautifulSoup(r.content, 'html.parser')
-        art = soup.find('article')
-        ps = art.find_all('p') if art else soup.find_all('p')
-        return '\n'.join(p.get_text() for p in ps)
-    except Exception:
-        return ''
+# URL do feed "Última Hora" do Notícias ao Minuto
+FEED_URL = 'https://www.noticiasaominuto.com/rss/ultima-hora'
+NUM_LATEST = 10  # quantidade de notícias mais recentes
 
-def scrape():
-    new = []
-    for rss in RSS_FEEDS:
-        r = requests.get(rss, timeout=5)
-        soup = BeautifulSoup(r.content, 'xml')
-        for item in soup.find_all('item'):
-            t = item.title.text
-            u = item.link.text
-            pd = item.pubDate.text if item.pubDate else ''
-            content = fetch_article_content(u)
-            aid = database.insert_article(t, u, content, pd)
-            if aid:
-                new.append(aid)
-    return new
+def fetch_latest(n=NUM_LATEST):
+    """Busca itens do RSS, ordena por pubDate e retorna os n mais recentes."""
+    resp = requests.get(FEED_URL)
+    resp.raise_for_status()
+    root = ET.fromstring(resp.content)
+    items = root.findall('./channel/item')
+
+    records = []
+    for item in items:
+        pub = item.findtext('pubDate')
+        if not pub:
+            continue
+        dt = parser.parse(pub)
+        dt = dt.astimezone(ZoneInfo('Europe/Lisbon'))
+        records.append((dt, item))
+
+    # ordena por data decrescente e pega os primeiros n
+    records.sort(key=lambda x: x[0], reverse=True)
+    return records[:n]
+
+def main():
+    # inicializa DB e garante tabela
+    init_db()
+    conn = get_connection()
+    cur = conn.cursor()
+
+    latest = fetch_latest()
+    for dt, item in latest:
+        provedor  = 'Notícias ao Minuto'
+        url        = item.findtext('link') or ''
+        data_iso   = dt.isoformat()
+        titulo     = item.findtext('title') or ''
+        descricao  = item.findtext('description') or ''
+        conteudo   = item.findtext('{http://purl.org/rss/1.0/modules/content/}encoded') or ''
+
+        cur.execute(
+            "INSERT INTO noticias (provedor, url, data, titulo, descricao, conteudo) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            (provedor, url, data_iso, titulo, descricao, conteudo)
+        )
+
+    conn.commit()
+    conn.close()
+    print(f"{len(latest)} notícias inseridas na base de dados.")
+
+if __name__ == '__main__':
+    main()
