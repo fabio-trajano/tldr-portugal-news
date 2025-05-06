@@ -19,9 +19,11 @@ CHAT_MODEL   = 'gpt-3.5-turbo'
 NUM_ARTICLES = 5   # usa 5 notícias mais recentes
 TOP_K        = 3   # número de artigos para contexto
 
+
 def get_embedding(text: str) -> np.ndarray:
     resp = openai.embeddings.create(model=EMB_MODEL, input=text)
     return np.array(resp.data[0].embedding, dtype='float32')
+
 
 def load_articles():
     """Carrega as últimas notícias da base usando o campo 'conteudo'."""
@@ -53,14 +55,28 @@ def load_articles():
 # carrega documentos uma vez
 METAS, INDEX = load_articles()
 
+
 def chat_fn(query, history):
-    """Processa pergunta, busca notícias mais relacionadas e gera resposta contextualizada."""
-    # embedding da pergunta
+    """Processa pergunta, detecta pedidos de lista ou faz RAG para responder."""
+    q_lower = query.lower()
+    # detecção de pedido de lista de notícias
+    if ('notícia' in q_lower or 'noticia' in q_lower) and (
+       'quais' in q_lower or 'listar' in q_lower or 'lista' in q_lower or 'list' in q_lower):
+        # somente lista de títulos
+        list_html = ''.join(
+            f"- <a href=\"{m['url']}\">{m['titulo']}</a><br>" for m in METAS
+        )
+        ans = f"As notícias recentes são:<br>{list_html}"
+        history.append({'role': 'user', 'content': query})
+        history.append({'role': 'assistant', 'content': ans})
+        # limpar input
+        return history, history, ''
+
+    # caso contrário, RAG normal
     q_emb = get_embedding(query)
     q_emb_norm = q_emb / np.linalg.norm(q_emb)
     _, I = INDEX.search(q_emb_norm.reshape(1, -1), TOP_K)
 
-    # constrói contexto com conteúdo completo de cada artigo relevante
     context = ''
     for idx in I[0]:
         m = METAS[idx]
@@ -70,20 +86,17 @@ def chat_fn(query, history):
         )
     context += '<hr>'
 
-    # prompt do sistema
     system_prompt = (
         "Você é um assistente que responde com base em notícias completas recentes:\n"
         f"{context}"
         "Responda de forma objetiva citando detalhes precisos do conteúdo fornecido."
     )
 
-    # monta mensagens para o Chat API
     messages = [{'role': 'system', 'content': system_prompt}]
     for msg in history:
         messages.append(msg)
     messages.append({'role': 'user', 'content': query})
 
-    # chamada à nova API do OpenAI
     resp = openai.chat.completions.create(
         model=CHAT_MODEL,
         messages=messages,
@@ -91,7 +104,6 @@ def chat_fn(query, history):
     )
     ans = resp.choices[0].message.content
 
-    # atualiza histórico
     history.append({'role': 'user', 'content': query})
     history.append({'role': 'assistant', 'content': ans})
     return history, history, ''
