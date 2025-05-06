@@ -48,6 +48,7 @@ A complete system to fetch news via RSS, generate TLDR summaries, send emails, a
    1. `scraper.main()`
    2. `summarizer.main()`
    3. `emailer.main()`
+   4. `chatbot.py()`
 
 ---
 
@@ -130,7 +131,7 @@ python src/scheduler.py
 ```
 This will:
 
-1. Execute scraper, summarizer, and emailer immediately.
+1. Execute scraper, summarizer and emailer immediately. Then runs the chatbot.py and make the chat available on port 7860
 
 2. Repeat those steps every hour.
 
