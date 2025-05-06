@@ -9,21 +9,21 @@ def get_connection():
     return sqlite3.connect(DB_PATH)
 
 def init_db():
-    """Cria tabela de notícias se não existir, incluindo URL."""
+    """Cria tabela de notícias se não existir, incluindo URL e resumo."""
     conn = get_connection()
     cur = conn.cursor()
     cur.execute("""
-    CREATE TABLE IF NOT EXISTS noticias (
-        id         INTEGER PRIMARY KEY AUTOINCREMENT,
-        provedor   TEXT    NOT NULL,
-        url        TEXT    NOT NULL,
-        data       TEXT    NOT NULL,
-        titulo     TEXT,
-        descricao  TEXT,
-        conteudo   TEXT,
-        resumo     TEXT,
-    );
-    """)
+CREATE TABLE IF NOT EXISTS noticias (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    provedor   TEXT    NOT NULL,
+    url        TEXT    NOT NULL,
+    data       TEXT    NOT NULL,
+    titulo     TEXT,
+    descricao  TEXT,
+    conteudo   TEXT,
+    resumo     TEXT
+)
+""")
     conn.commit()
     conn.close()
 

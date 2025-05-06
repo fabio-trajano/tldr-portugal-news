@@ -9,7 +9,8 @@ from database import init_db, get_connection
 
 # URL do feed "Última Hora" do Notícias ao Minuto
 FEED_URL = 'https://www.noticiasaominuto.com/rss/ultima-hora'
-NUM_LATEST = 10  # quantidade de notícias mais recentes
+NUM_LATEST = 5  # quantidade de notícias mais recentes
+
 
 def fetch_latest(n=NUM_LATEST):
     """Busca itens do RSS, ordena por pubDate e retorna os n mais recentes."""
@@ -31,11 +32,16 @@ def fetch_latest(n=NUM_LATEST):
     records.sort(key=lambda x: x[0], reverse=True)
     return records[:n]
 
+
 def main():
     # inicializa DB e garante tabela
     init_db()
     conn = get_connection()
     cur = conn.cursor()
+
+    # Apaga notícias antigas a cada execução
+    cur.execute("DELETE FROM noticias")
+    conn.commit()
 
     latest = fetch_latest()
     for dt, item in latest:
@@ -47,14 +53,15 @@ def main():
         conteudo   = item.findtext('{http://purl.org/rss/1.0/modules/content/}encoded') or ''
 
         cur.execute(
-            "INSERT INTO noticias (provedor, url, data, titulo, descricao, conteudo) "
-            "VALUES (?, ?, ?, ?, ?, ?)",
+            "INSERT INTO noticias (provedor, url, data, titulo, descricao, conteudo)"
+            " VALUES (?, ?, ?, ?, ?, ?)",
             (provedor, url, data_iso, titulo, descricao, conteudo)
         )
 
     conn.commit()
     conn.close()
     print(f"{len(latest)} notícias inseridas na base de dados.")
+
 
 if __name__ == '__main__':
     main()
