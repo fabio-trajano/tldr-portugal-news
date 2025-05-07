@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -8,7 +7,6 @@ import openai
 
 from database import get_connection
 
-# Configurações OpenAI
 openai.api_key = os.getenv('OPENAI_API_KEY')
 MODEL = 'gpt-3.5-turbo'
 
@@ -19,7 +17,6 @@ def init_summary_column(conn):
     try:
         cur.execute("ALTER TABLE noticias ADD COLUMN resumo TEXT;")
     except sqlite3.OperationalError:
-        # coluna já existe
         pass
     conn.commit()
 
@@ -56,7 +53,6 @@ def generate_summary(titulo, descricao, conteudo):
 
 
 def main():
-    # Abre DB e garante coluna de resumo
     conn = get_connection()
     init_summary_column(conn)
 

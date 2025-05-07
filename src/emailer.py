@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -11,7 +10,6 @@ import aiosmtplib
 from email.message import EmailMessage
 from database import DB_PATH
 
-# Configurações SMTP e destinatários
 to_addrs = [r.strip() for r in os.getenv('RECIPIENT_EMAILS', '').split(',') if r.strip()]
 SMTP_HOST = os.getenv('SMTP_HOST')
 SMTP_PORT = int(os.getenv('SMTP_PORT', '587'))

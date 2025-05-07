@@ -1,7 +1,6 @@
 import sqlite3
 from pathlib import Path
 
-# Caminho para o ficheiro de base de dados
 DB_PATH = Path(__file__).parent / 'noticias.db'
 
 def get_connection():

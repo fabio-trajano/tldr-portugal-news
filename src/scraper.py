@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 import requests
 import xml.etree.ElementTree as ET
 from dateutil import parser
@@ -7,9 +6,9 @@ from zoneinfo import ZoneInfo
 
 from database import init_db, get_connection
 
-# URL do feed "Última Hora" do Notícias ao Minuto
+
 FEED_URL = 'https://www.noticiasaominuto.com/rss/ultima-hora'
-NUM_LATEST = 5  # quantidade de notícias mais recentes
+NUM_LATEST = 5
 
 
 def fetch_latest(n=NUM_LATEST):
@@ -28,18 +27,15 @@ def fetch_latest(n=NUM_LATEST):
         dt = dt.astimezone(ZoneInfo('Europe/Lisbon'))
         records.append((dt, item))
 
-    # ordena por data decrescente e pega os primeiros n
     records.sort(key=lambda x: x[0], reverse=True)
     return records[:n]
 
 
 def main():
-    # inicializa DB e garante tabela
     init_db()
     conn = get_connection()
     cur = conn.cursor()
 
-    # Apaga notícias antigas a cada execução
     cur.execute("DELETE FROM noticias")
     conn.commit()
 
